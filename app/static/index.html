@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Requirement Agent</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div>
+        <h1>Voice Requirement Agent</h1>
+        <p class="subtitle">Turn a client brief into narration audio</p>
+      </div>
+      <div id="health-badge" class="health-badge" aria-live="polite">Checking…</div>
+    </header>
+
+    <main class="grid">
+      <section class="card" aria-labelledby="generate-heading">
+        <h2 id="generate-heading">Generate audio</h2>
+        <form id="generate-form">
+          <label for="requirement">Client requirement</label>
+          <textarea
+            id="requirement"
+            name="requirement"
+            rows="6"
+            minlength="3"
+            required
+            placeholder="Describe what the client wants — the agent will write a spoken narration script and synthesize it."
+          ></textarea>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="use-agent-tools" name="use_agent_tools" checked />
+            Use agent tools (structured script emission)
+          </label>
+
+          <button type="submit" id="submit-btn">Generate audio</button>
+        </form>
+
+        <div id="status-panel" class="status-panel hidden" aria-live="polite">
+          <div class="status-step" data-step="script">
+            <span class="step-icon"></span>
+            <span>Generating narration script…</span>
+          </div>
+          <div class="status-step" data-step="audio">
+            <span class="step-icon"></span>
+            <span>Creating audio…</span>
+          </div>
+        </div>
+
+        <div id="error-box" class="error-box hidden" role="alert"></div>
+
+        <div id="result-panel" class="result-panel hidden">
+          <h3>Result</h3>
+          <dl class="meta-grid" id="result-meta"></dl>
+          <label for="result-script">Narration script</label>
+          <pre id="result-script" class="script-box"></pre>
+          <label>Preview</label>
+          <audio id="result-player" controls preload="metadata"></audio>
+          <a id="result-download" class="btn-link" href="#" download>Download MP3</a>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="library-heading">
+        <div class="section-header">
+          <h2 id="library-heading">Created audio</h2>
+          <button type="button" id="refresh-library" class="btn-secondary">Refresh</button>
+        </div>
+        <p class="hint">Previously generated files from your output folder.</p>
+        <ul id="audio-library" class="audio-library"></ul>
+        <p id="library-empty" class="empty-state hidden">No audio files yet.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a href="/docs" target="_blank" rel="noopener">API docs (Swagger)</a>
+    </footer>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

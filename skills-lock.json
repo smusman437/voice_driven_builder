@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "agents": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "9ddb039f74bb5a3d5fcd30f1107abd7b146e7feb0592c9ec7637622523ad43f1"
+    },
+    "anthropic-api": {
+      "source": "alphaonedev/openclaw-graph",
+      "sourceType": "github",
+      "computedHash": "02916fa214bd35fce1b7b82de915d2ed47f0a74e5c9fcf8afe9825bfebd5fbc7"
+    },
+    "docker-expert": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "7a0cf3e3a5f8d18ddb452c784ac965aa40b1bfa2a736c5689d252328f18017d1"
+    },
+    "fastapi-python": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "computedHash": "1d7346210a6690d2faeb089f074c0dc20a7056c2c83ac1062a11c1b73158be72"
+    },
+    "openai-docs": {
+      "source": "openai/skills",
+      "sourceType": "github",
+      "computedHash": "7c0cb31b80f601a4394449bf27bc865a9ff31cd0daaa1088a017fdb57b7ae306"
+    },
+    "swagger-doc-creator": {
+      "source": "jeremylongshore/claude-code-plugins-plus-skills",
+      "sourceType": "github",
+      "computedHash": "42e4afdae607b84400cd1a9b75a229c0c391e3c3bedd2305e7179946c775beff"
+    },
+    "text-to-speech": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "dccf9155f284345ade4a5af5d3c3db5d5da77856011ff92fff725160b0df8370"
+    }
+  }
+}
