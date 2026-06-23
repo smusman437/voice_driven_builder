@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     elevenlabs_model_id: str = "eleven_multilingual_v2"
 
     # --- Agent ---
-    agent_use_tools: bool = True
+    agent_use_tools: bool = False
     agent_max_turns: int = 12
     log_level: str = "INFO"
 

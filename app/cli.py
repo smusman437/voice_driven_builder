@@ -13,7 +13,7 @@ from app.settings import get_settings
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Turn a client requirement into narration audio (LLM → ElevenLabs).",
+        description="Convert a client requirement into an audio file (AI narration → ElevenLabs MP3).",
     )
     parser.add_argument(
         "requirement",

@@ -26,15 +26,18 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     configure_logging(settings.log_level)
     settings.output_dir.mkdir(parents=True, exist_ok=True)
-    logger.info("Starting Voice Requirement Agent (LLM=%s).", settings.llm_provider)
+    logger.info("Starting Client Requirement → Audio Agent (LLM=%s).", settings.llm_provider)
     yield
     logger.info("Shutdown complete.")
 
 
 app = FastAPI(
-    title="Voice-Driven Requirement Agent",
+    title="Client Requirement → Audio Agent",
     version="0.1.0",
-    description="Client requirement → LLM narration → ElevenLabs MP3.",
+    description=(
+        "AI agent that takes client requirements and converts them into "
+        "professional audio files with ElevenLabs."
+    ),
     lifespan=lifespan,
 )
 app.include_router(router)

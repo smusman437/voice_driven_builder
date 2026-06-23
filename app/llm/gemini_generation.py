@@ -9,7 +9,11 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 
-from app.agent.tools_spec import EMIT_AUDIO_SCRIPT_TOOL_NAME, SYSTEM_PROMPT
+from app.agent.tools_spec import (
+    DIRECT_NARRATION_PROMPT,
+    EMIT_AUDIO_SCRIPT_TOOL_NAME,
+    SYSTEM_PROMPT,
+)
 from app.settings import Settings, parse_csv
 
 logger = logging.getLogger(__name__)
@@ -116,7 +120,7 @@ async def generate_with_gemini(
         models.insert(0, settings.gemini_model)
 
     base_config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT,
+        system_instruction=DIRECT_NARRATION_PROMPT if not use_tools else SYSTEM_PROMPT,
         temperature=0.4,
     )
     errors: list[str] = []
@@ -179,8 +183,8 @@ async def generate_with_gemini(
                         parts=[
                             types.Part(
                                 text=(
-                                    "You must call emit_audio_script exactly once with the full "
-                                    "spoken narration in the script field (plain text, no markdown)."
+                                    "Call emit_audio_script once. The script field must contain "
+                                    "ONLY the spoken narration — no analysis, tool names, or meta text."
                                 )
                             )
                         ],

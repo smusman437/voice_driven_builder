@@ -14,7 +14,7 @@ const audioLibrary = document.getElementById("audio-library");
 const libraryEmpty = document.getElementById("library-empty");
 const refreshLibraryBtn = document.getElementById("refresh-library");
 
-let audioPhaseTimer = null;
+let phaseTimers = [];
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -23,15 +23,27 @@ function formatBytes(bytes) {
 }
 
 function formatDate(unixSeconds) {
-  return new Date(unixSeconds * 1000).toLocaleString();
+  return new Date(unixSeconds * 1000).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
-/** Preload metadata so native controls show total duration (e.g. 0:00 / 0:41) before play. */
+function friendlyAudioTitle(filename, index, total) {
+  return `Recording ${total - index}`;
+}
+
+/** Preload metadata so native controls show total duration before play. */
 function prepareAudioPlayer(player, src) {
   player.preload = "metadata";
   player.src = src;
   player.load();
   return player;
+}
+
+function clearPhaseTimers() {
+  phaseTimers.forEach(clearTimeout);
+  phaseTimers = [];
 }
 
 function setStepState(step, state) {
@@ -42,32 +54,45 @@ function setStepState(step, state) {
 }
 
 function resetStatus() {
-  clearTimeout(audioPhaseTimer);
+  clearPhaseTimers();
   statusPanel.classList.add("hidden");
-  setStepState("script", "");
-  setStepState("audio", "");
+  for (const step of ["understand", "script", "audio"]) {
+    setStepState(step, "");
+  }
 }
 
 function startProgress() {
   statusPanel.classList.remove("hidden");
   errorBox.classList.add("hidden");
   resultPanel.classList.add("hidden");
-  setStepState("script", "active");
+
+  setStepState("understand", "active");
+  setStepState("script", "");
   setStepState("audio", "");
-  audioPhaseTimer = setTimeout(() => {
-    setStepState("script", "done");
-    setStepState("audio", "active");
-  }, 2000);
+
+  phaseTimers.push(
+    setTimeout(() => {
+      setStepState("understand", "done");
+      setStepState("script", "active");
+    }, 1200)
+  );
+  phaseTimers.push(
+    setTimeout(() => {
+      setStepState("script", "done");
+      setStepState("audio", "active");
+    }, 3500)
+  );
 }
 
 function finishProgress() {
-  clearTimeout(audioPhaseTimer);
+  clearPhaseTimers();
+  setStepState("understand", "done");
   setStepState("script", "done");
   setStepState("audio", "done");
 }
 
 function parseErrorDetail(payload) {
-  if (!payload) return "Request failed.";
+  if (!payload) return "Something went wrong. Please try again.";
   const detail = payload.detail;
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) {
@@ -81,11 +106,11 @@ async function loadHealth() {
     const res = await fetch("/health");
     if (!res.ok) throw new Error("Health check failed");
     const data = await res.json();
-    healthBadge.textContent = `API ok · LLM: ${data.llm_provider}`;
+    healthBadge.textContent = `Ready · AI + ElevenLabs · ${data.llm_provider}`;
     healthBadge.classList.add("ok");
     healthBadge.classList.remove("error");
   } catch {
-    healthBadge.textContent = "API unreachable";
+    healthBadge.textContent = "Agent offline";
     healthBadge.classList.add("error");
     healthBadge.classList.remove("ok");
   }
@@ -99,61 +124,58 @@ function renderLibrary(items) {
   }
   libraryEmpty.classList.add("hidden");
 
-  for (const item of items) {
+  items.forEach((item, index) => {
     const li = document.createElement("li");
     li.className = "audio-item";
 
     const header = document.createElement("div");
     header.className = "audio-item-header";
     header.innerHTML = `
-      <span class="audio-item-name">${item.filename}</span>
+      <span class="audio-item-title">${friendlyAudioTitle(item.filename, index, items.length)}</span>
       <span class="audio-item-meta">${formatBytes(item.size_bytes)}</span>
     `;
 
-    const meta = document.createElement("div");
-    meta.className = "audio-item-meta";
-    meta.style.marginBottom = "0.5rem";
-    meta.textContent = formatDate(item.created_at);
+    const date = document.createElement("div");
+    date.className = "audio-item-date";
+    date.textContent = formatDate(item.created_at);
 
     const player = prepareAudioPlayer(document.createElement("audio"), item.download_path);
     player.controls = true;
 
     const download = document.createElement("a");
-    download.className = "btn-link";
+    download.className = "btn-download";
     download.href = item.download_path;
     download.download = item.filename;
-    download.textContent = "Download";
+    download.textContent = "Download MP3";
 
-    li.append(header, meta, player, download);
+    li.append(header, date, player, download);
     audioLibrary.appendChild(li);
-  }
+  });
 }
 
 async function loadLibrary() {
   try {
     const res = await fetch("/v1/audio");
-    if (!res.ok) throw new Error("Could not load audio list");
-    const items = await res.json();
-    renderLibrary(items);
+    if (!res.ok) throw new Error("Could not load your audio files.");
+    renderLibrary(await res.json());
   } catch (err) {
-    libraryEmpty.textContent = err.message || "Failed to load audio list.";
+    libraryEmpty.textContent = err.message || "Failed to load audio files.";
     libraryEmpty.classList.remove("hidden");
   }
 }
 
 function showResult(data) {
+  resultScript.textContent = data.script;
   resultMeta.innerHTML = `
-    <dt>LLM used</dt><dd>${data.llm_provider}</dd>
-    <dt>Configured</dt><dd>${data.llm_provider_configured}</dd>
-    <dt>Fallback</dt><dd>${data.llm_fallback_used ? "yes" : "no"}</dd>
-    <dt>Agent tools</dt><dd>${data.used_tools ? "yes" : "no"}</dd>
+    <dt>Voice engine</dt><dd>ElevenLabs</dd>
+    <dt>AI provider</dt><dd>${data.llm_provider}</dd>
     <dt>File</dt><dd>${data.audio_filename}</dd>
   `;
-  resultScript.textContent = data.script;
   prepareAudioPlayer(resultPlayer, data.download_path);
   resultDownload.href = data.download_path;
   resultDownload.download = data.audio_filename;
   resultPanel.classList.remove("hidden");
+  resultPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 form.addEventListener("submit", async (event) => {
@@ -162,20 +184,17 @@ form.addEventListener("submit", async (event) => {
   if (requirement.length < 3) return;
 
   submitBtn.disabled = true;
+  submitBtn.querySelector(".btn-label").textContent = "Converting…";
   startProgress();
 
   try {
-    const body = { requirement };
-    if (useToolsInput.checked) {
-      body.use_agent_tools = true;
-    } else {
-      body.use_agent_tools = false;
-    }
-
     const res = await fetch("/v1/requirements-to-audio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        requirement,
+        use_agent_tools: useToolsInput.checked,
+      }),
     });
 
     const payload = await res.json().catch(() => ({}));
@@ -188,10 +207,11 @@ form.addEventListener("submit", async (event) => {
     await loadLibrary();
   } catch (err) {
     resetStatus();
-    errorBox.textContent = err.message || "Something went wrong.";
+    errorBox.textContent = err.message || "Conversion failed. Please try again.";
     errorBox.classList.remove("hidden");
   } finally {
     submitBtn.disabled = false;
+    submitBtn.querySelector(".btn-label").textContent = "Convert to audio";
   }
 });
 

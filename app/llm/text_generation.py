@@ -13,15 +13,26 @@ from openai import AsyncOpenAI
 from openai import RateLimitError
 
 from app.agent.tools_spec import (
+    DIRECT_NARRATION_PROMPT,
     EMIT_AUDIO_SCRIPT_TOOL_NAME,
     SYSTEM_PROMPT,
     TOOLS_ANTHROPIC,
     TOOLS_OPENAI,
 )
+from app.agent.script_sanitize import extract_speakable_script
 from app.llm.gemini_generation import generate_with_gemini
 from app.settings import Settings
 
 logger = logging.getLogger(__name__)
+
+
+def _finalize_script(raw: str, *, context: str) -> str:
+    script = extract_speakable_script(raw)
+    if not script:
+        raise ValueError("LLM returned empty or non-speakable script.")
+    if script != raw.strip():
+        logger.info("Sanitized LLM output for TTS (%s).", context)
+    return script
 
 
 @dataclass(frozen=True)
@@ -42,7 +53,11 @@ async def generate_script_text(
     primary = settings.llm_provider
     try:
         text = await _generate_by_provider(requirement, settings, use_tools, primary)
-        return ScriptGeneration(text=text, provider_used=primary, used_fallback=False)
+        return ScriptGeneration(
+            text=_finalize_script(text, context=f"primary:{primary}"),
+            provider_used=primary,
+            used_fallback=False,
+        )
     except Exception as exc:
         fallback = settings.llm_fallback_provider
         if _should_try_fallback(exc, primary, fallback):
@@ -53,7 +68,9 @@ async def generate_script_text(
             )
             text = await _generate_by_provider(requirement, settings, use_tools, fallback)
             return ScriptGeneration(
-                text=text, provider_used=fallback, used_fallback=True
+                text=_finalize_script(text, context=f"fallback:{fallback}"),
+                provider_used=fallback,
+                used_fallback=True,
             )
         raise
 
@@ -152,7 +169,10 @@ async def _openai_compatible_generate(
         client = AsyncOpenAI(api_key=api_key)
 
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "system",
+            "content": DIRECT_NARRATION_PROMPT if not use_tools else SYSTEM_PROMPT,
+        },
         {"role": "user", "content": requirement},
     ]
 
@@ -209,7 +229,10 @@ async def _openai_compatible_generate(
                 {
                     "role": "tool",
                     "tool_call_id": msg.tool_calls[0].id,
-                    "content": "Tool not completed; call emit_audio_script once with the full script.",
+                    "content": (
+                        "Wrong. Call emit_audio_script once. The script field must contain "
+                        "ONLY the spoken narration — no analysis, no tool names, no meta text."
+                    ),
                 }
             )
             continue
@@ -236,7 +259,7 @@ async def _anthropic_generate(requirement: str, settings: Settings, use_tools: b
         resp = await client.messages.create(
             model=settings.anthropic_model,
             max_tokens=4096,
-            system=SYSTEM_PROMPT,
+            system=DIRECT_NARRATION_PROMPT if not use_tools else SYSTEM_PROMPT,
             messages=messages,
             temperature=0.4,
         )
@@ -286,7 +309,10 @@ async def _anthropic_generate(requirement: str, settings: Settings, use_tools: b
                 {
                     "type": "tool_result",
                     "tool_use_id": block.id,
-                    "content": "Please call emit_audio_script with the full final narration.",
+                    "content": (
+                        "Call emit_audio_script with ONLY the spoken narration in script — "
+                        "no analysis or meta text."
+                    ),
                 }
             )
         if not follow_user and text_parts:

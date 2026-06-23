@@ -1,11 +1,12 @@
 # Voice-driven requirement agent
 
-This project turns a client requirement into speech audio:
-**text requirement → LLM script generation → ElevenLabs TTS → MP3 file**.
+An **AI agent** that takes **client requirements** and converts them into **professional audio files with ElevenLabs**.
+
+**Client requirement → AI narration → ElevenLabs MP3**
 
 It includes:
-- FastAPI endpoints
-- **Web UI** for generating and playing audio (no curl/Postman required)
+- **Web UI** — paste a client requirement, get audio back (no curl or Postman needed)
+- FastAPI backend with REST API
 - Swagger/ReDoc for API testing
 - Agent-style tool loop (optional)
 - Error handling and logging

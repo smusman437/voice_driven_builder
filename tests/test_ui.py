@@ -26,4 +26,4 @@ def test_ui_served_at_root(client: TestClient):
     r = client.get("/")
     assert r.status_code == 200
     assert "text/html" in r.headers.get("content-type", "")
-    assert "Voice Requirement Agent" in r.text
+    assert "Turn client requirements into audio" in r.text

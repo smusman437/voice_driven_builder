@@ -3,78 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Voice Requirement Agent</title>
+  <title>Client Requirement → Audio | ElevenLabs AI Agent</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
   <div class="page">
-    <header class="header">
-      <div>
-        <h1>Voice Requirement Agent</h1>
-        <p class="subtitle">Turn a client brief into narration audio</p>
+    <header class="hero">
+      <div class="hero-text">
+        <p class="eyebrow">AI Agent · ElevenLabs</p>
+        <h1>Turn client requirements into audio</h1>
+        <p class="lead">
+          Paste what your client needs. The agent writes a natural narration and converts it
+          into a professional MP3 with ElevenLabs — ready to play or share.
+        </p>
       </div>
       <div id="health-badge" class="health-badge" aria-live="polite">Checking…</div>
     </header>
 
+    <section class="pipeline" aria-label="How it works">
+      <div class="pipeline-step">
+        <span class="pipeline-num">1</span>
+        <span class="pipeline-label">Client requirement</span>
+      </div>
+      <span class="pipeline-arrow" aria-hidden="true">→</span>
+      <div class="pipeline-step">
+        <span class="pipeline-num">2</span>
+        <span class="pipeline-label">AI narration</span>
+      </div>
+      <span class="pipeline-arrow" aria-hidden="true">→</span>
+      <div class="pipeline-step pipeline-step-accent">
+        <span class="pipeline-num">3</span>
+        <span class="pipeline-label">ElevenLabs audio</span>
+      </div>
+    </section>
+
     <main class="grid">
-      <section class="card" aria-labelledby="generate-heading">
-        <h2 id="generate-heading">Generate audio</h2>
+      <section class="card card-primary" aria-labelledby="convert-heading">
+        <h2 id="convert-heading">New conversion</h2>
+        <p class="card-intro">Describe the client’s request in plain language. The agent handles the rest.</p>
+
         <form id="generate-form">
           <label for="requirement">Client requirement</label>
           <textarea
             id="requirement"
             name="requirement"
-            rows="6"
+            rows="7"
             minlength="3"
             required
-            placeholder="Describe what the client wants — the agent will write a spoken narration script and synthesize it."
+            placeholder="Example: We need a professional 90-second narration explaining our cloud-based business management software for small businesses."
           ></textarea>
 
-          <label class="checkbox-row">
-            <input type="checkbox" id="use-agent-tools" name="use_agent_tools" checked />
-            Use agent tools (structured script emission)
-          </label>
+          <details class="advanced-options">
+            <summary>Advanced options</summary>
+            <label class="checkbox-row">
+              <input type="checkbox" id="use-agent-tools" name="use_agent_tools" />
+              Use structured agent tools (leave off for the most natural voice)
+            </label>
+          </details>
 
-          <button type="submit" id="submit-btn">Generate audio</button>
+          <button type="submit" id="submit-btn" class="btn-primary">
+            <span class="btn-label">Convert to audio</span>
+          </button>
         </form>
 
         <div id="status-panel" class="status-panel hidden" aria-live="polite">
+          <div class="status-step" data-step="understand">
+            <span class="step-icon"></span>
+            <span>Understanding client requirement…</span>
+          </div>
           <div class="status-step" data-step="script">
             <span class="step-icon"></span>
-            <span>Generating narration script…</span>
+            <span>Writing natural narration…</span>
           </div>
           <div class="status-step" data-step="audio">
             <span class="step-icon"></span>
-            <span>Creating audio…</span>
+            <span>Creating audio with ElevenLabs…</span>
           </div>
         </div>
 
         <div id="error-box" class="error-box hidden" role="alert"></div>
 
         <div id="result-panel" class="result-panel hidden">
-          <h3>Result</h3>
-          <dl class="meta-grid" id="result-meta"></dl>
-          <label for="result-script">Narration script</label>
-          <pre id="result-script" class="script-box"></pre>
-          <label>Preview</label>
-          <audio id="result-player" controls preload="metadata"></audio>
-          <a id="result-download" class="btn-link" href="#" download>Download MP3</a>
+          <div class="success-banner">
+            <span class="success-icon" aria-hidden="true">✓</span>
+            <div>
+              <strong>Your audio is ready</strong>
+              <p>Listen below or download the MP3 file.</p>
+            </div>
+          </div>
+
+          <div class="player-wrap">
+            <audio id="result-player" controls preload="metadata"></audio>
+            <a id="result-download" class="btn-download" href="#" download>Download MP3</a>
+          </div>
+
+          <details class="script-details">
+            <summary>View narration script</summary>
+            <pre id="result-script" class="script-box"></pre>
+            <dl class="meta-grid" id="result-meta"></dl>
+          </details>
         </div>
       </section>
 
       <section class="card" aria-labelledby="library-heading">
         <div class="section-header">
-          <h2 id="library-heading">Created audio</h2>
+          <div>
+            <h2 id="library-heading">Your audio files</h2>
+            <p class="hint">All MP3s created from client requirements.</p>
+          </div>
           <button type="button" id="refresh-library" class="btn-secondary">Refresh</button>
         </div>
-        <p class="hint">Previously generated files from your output folder.</p>
         <ul id="audio-library" class="audio-library"></ul>
-        <p id="library-empty" class="empty-state hidden">No audio files yet.</p>
+        <p id="library-empty" class="empty-state">
+          No audio yet. Enter a client requirement and click <strong>Convert to audio</strong>.
+        </p>
       </section>
     </main>
 
     <footer class="footer">
-      <a href="/docs" target="_blank" rel="noopener">API docs (Swagger)</a>
+      <span>Client requirement → AI narration → ElevenLabs MP3</span>
+      <a href="/docs" target="_blank" rel="noopener">Developer API</a>
     </footer>
   </div>
   <script src="/static/app.js"></script>
