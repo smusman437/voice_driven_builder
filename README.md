@@ -1,12 +1,12 @@
 # Voice-driven requirement agent
 
-An **AI agent** that takes **client requirements** and converts them into **professional audio files with ElevenLabs**.
-
-**Client requirement → AI narration → ElevenLabs MP3**
+This project turns a client requirement into speech audio:
+**text requirement → LLM script generation → ElevenLabs TTS → MP3 file**.
 
 It includes:
-- **Web UI** — paste a client requirement, get audio back (no curl or Postman needed)
-- FastAPI backend with REST API
+
+- FastAPI endpoints
+- **Web UI** for generating and playing audio (no curl/Postman required)
 - Swagger/ReDoc for API testing
 - Agent-style tool loop (optional)
 - Error handling and logging
@@ -34,6 +34,8 @@ flowchart LR
   API -->|JSON + download URL| U
 ```
 
+
+
 **Agent loop (when tools are on)** means: the model may take several turns; we stop as soon as `emit_audio_script` returns usable text, or fall back to plain assistant text if the provider returns content without a tool call (logged for traceability).
 
 ## Prerequisites
@@ -49,26 +51,28 @@ Copy the template and edit:
 cp .env.example .env
 ```
 
-| Variable | Required | Where to get it |
-|----------|----------|-----------------|
-| `ELEVENLABS_API_KEY` | **Yes** | [ElevenLabs → Profile → API keys](https://elevenlabs.io/app/settings/api-keys) |
-| `LLM_PROVIDER` | No (`mock`) | `mock`, `gemini`, `groq`, `openai`, or `anthropic` |
-| `LLM_FALLBACK_PROVIDER` | No (`mock`) | Auto fallback when primary provider hits quota/rate limits; set `none` to disable |
-| `GEMINI_API_KEY` or `GOOGLE_API_KEY` | If `gemini` | [Google AI Studio API key](https://aistudio.google.com/apikey) (free tier; either env name works) |
-| `GEMINI_MODEL` | No | Default `gemini-1.5-flash` |
-| `GEMINI_MODEL_CANDIDATES` | No | Comma-separated model retry chain when quota/rate-limit happens |
-| `GROQ_API_KEY` | If `groq` | [Groq Console](https://console.groq.com/keys) (free; OpenAI-compatible) |
-| `OPENAI_API_KEY` | If `openai` | [OpenAI API keys](https://platform.openai.com/api-keys) (paid / credits) |
-| `ANTHROPIC_API_KEY` | If `anthropic` | [Anthropic Console](https://console.anthropic.com/settings/keys) |
-| `GROQ_MODEL` | No | Default `llama-3.1-8b-instant` |
-| `OPENAI_MODEL` | No | Default `gpt-4o-mini` |
-| `ANTHROPIC_MODEL` | No | Default `claude-3-5-sonnet-20241022` |
-| `ELEVENLABS_VOICE_ID` | No | [Voices in dashboard](https://elevenlabs.io/app/voice-library); default is “George” |
-| `ELEVENLABS_MODEL_ID` | No | Default `eleven_multilingual_v2` |
-| `AGENT_USE_TOOLS` | No | `true` / `false` — default `true` |
-| `AGENT_MAX_TURNS` | No | Max LLM turns when tools are on (default `12`) |
-| `LOG_LEVEL` | No | e.g. `INFO`, `DEBUG` |
-| `OUTPUT_DIR` | No | Directory for MP3 files (default `outputs`) |
+
+| Variable                             | Required       | Where to get it                                                                                   |
+| ------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------- |
+| `ELEVENLABS_API_KEY`                 | **Yes**        | [ElevenLabs → Profile → API keys](https://elevenlabs.io/app/settings/api-keys)                    |
+| `LLM_PROVIDER`                       | No (`mock`)    | `mock`, `gemini`, `groq`, `openai`, or `anthropic`                                                |
+| `LLM_FALLBACK_PROVIDER`              | No (`mock`)    | Auto fallback when primary provider hits quota/rate limits; set `none` to disable                 |
+| `GEMINI_API_KEY` or `GOOGLE_API_KEY` | If `gemini`    | [Google AI Studio API key](https://aistudio.google.com/apikey) (free tier; either env name works) |
+| `GEMINI_MODEL`                       | No             | Default `gemini-1.5-flash`                                                                        |
+| `GEMINI_MODEL_CANDIDATES`            | No             | Comma-separated model retry chain when quota/rate-limit happens                                   |
+| `GROQ_API_KEY`                       | If `groq`      | [Groq Console](https://console.groq.com/keys) (free; OpenAI-compatible)                           |
+| `OPENAI_API_KEY`                     | If `openai`    | [OpenAI API keys](https://platform.openai.com/api-keys) (paid / credits)                          |
+| `ANTHROPIC_API_KEY`                  | If `anthropic` | [Anthropic Console](https://console.anthropic.com/settings/keys)                                  |
+| `GROQ_MODEL`                         | No             | Default `llama-3.1-8b-instant`                                                                    |
+| `OPENAI_MODEL`                       | No             | Default `gpt-4o-mini`                                                                             |
+| `ANTHROPIC_MODEL`                    | No             | Default `claude-3-5-sonnet-20241022`                                                              |
+| `ELEVENLABS_VOICE_ID`                | No             | [Voices in dashboard](https://elevenlabs.io/app/voice-library); default is “George”               |
+| `ELEVENLABS_MODEL_ID`                | No             | Default `eleven_multilingual_v2`                                                                  |
+| `AGENT_USE_TOOLS`                    | No             | `true` / `false` — default `true`                                                                 |
+| `AGENT_MAX_TURNS`                    | No             | Max LLM turns when tools are on (default `12`)                                                    |
+| `LOG_LEVEL`                          | No             | e.g. `INFO`, `DEBUG`                                                                              |
+| `OUTPUT_DIR`                         | No             | Directory for MP3 files (default `outputs`)                                                       |
+
 
 **Security:** Never commit `.env`. It is listed in `.gitignore`.
 
@@ -76,7 +80,7 @@ cp .env.example .env
 
 Set `LLM_PROVIDER=mock` in `.env`. The app builds a short template script **without** calling OpenAI, Anthropic, or Groq. You still need `ELEVENLABS_API_KEY` so audio can be generated.
 
-For a **free** real LLM, use **`LLM_PROVIDER=gemini`** with `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) from [Google AI Studio](https://aistudio.google.com/apikey), or use `LLM_PROVIDER=groq` with [Groq](https://console.groq.com/keys).  
+For a **free** real LLM, use `**LLM_PROVIDER=gemini`** with `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) from [Google AI Studio](https://aistudio.google.com/apikey), or use `LLM_PROVIDER=groq` with [Groq](https://console.groq.com/keys).  
 Gemini now automatically retries across `GEMINI_MODEL_CANDIDATES` when a model hits quota/rate-limit, then falls back via `LLM_FALLBACK_PROVIDER` if all candidates fail.
 
 ### Troubleshooting: ElevenLabs free-plan voice error (402)
@@ -110,17 +114,19 @@ chmod +x run.sh
 
 After `./run.sh` is running, open in your browser:
 
-| URL | Purpose |
-|-----|---------|
-| **http://127.0.0.1:8000/** | **Main web UI** — generate audio, play results, browse past files |
-| http://127.0.0.1:8000/docs | Swagger API docs (optional, for developers) |
-| http://127.0.0.1:8000/redoc | ReDoc API reference (optional) |
+
+| URL                                                        | Purpose                                                           |
+| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**       | **Main web UI** — generate audio, play results, browse past files |
+| [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)   | Swagger API docs (optional, for developers)                       |
+| [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc) | ReDoc API reference (optional)                                    |
+
 
 Stop the server with `Ctrl+C` in the terminal.
 
 ## Using the web UI
 
-1. Run `./run.sh` and open **http://127.0.0.1:8000/**
+1. Run `./run.sh` and open **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**
 2. Check the top-right badge — it shows API status and your configured LLM provider
 3. Enter a client requirement in the text area (at least 3 characters)
 4. Optionally toggle **Use agent tools** (structured script emission)
@@ -227,7 +233,7 @@ curl -s -X POST http://127.0.0.1:8000/v1/requirements-to-audio \
   -d '{"requirement":"Explain a minimal MVP for a pet-sitting marketplace in two minutes of speech.","use_agent_tools":false}'
 ```
 
-4. Open the returned `download_path` in a browser or `curl` it — confirms file I/O.
+1. Open the returned `download_path` in a browser or `curl` it — confirms file I/O.
 
 **What “testing the agent” means here**
 
@@ -239,6 +245,7 @@ curl -s -X POST http://127.0.0.1:8000/v1/requirements-to-audio \
 
 Docker is **not required** to run this project locally.
 Use Docker when you want:
+
 - isolated runtime
 - consistent deployment environment
 - easier server/container hosting
@@ -255,19 +262,21 @@ The container writes MP3s under `/app/outputs` (bind-mount a volume if you need 
 
 ## Project layout
 
-| Path | Role |
-|------|------|
-| `app/main.py` | FastAPI app, lifespan, logging |
-| `app/settings.py` | Pydantic settings / env |
-| `app/llm/text_generation.py` | Provider routing + OpenAI-compatible & Anthropic loops |
-| `app/llm/gemini_generation.py` | Google Gemini (Google AI Studio) |
-| `app/agent/tools_spec.py` | System prompt + `emit_audio_script` schema |
-| `app/tts/elevenlabs_tts.py` | ElevenLabs synthesis + retries |
-| `app/agent/service.py` | Orchestration |
-| `app/api/routes.py` | Routes |
-| `app/static/` | Web UI (HTML, CSS, JS) |
-| `app/cli.py` | CLI entry |
-| `tests/` | Pytest |
+
+| Path                           | Role                                                   |
+| ------------------------------ | ------------------------------------------------------ |
+| `app/main.py`                  | FastAPI app, lifespan, logging                         |
+| `app/settings.py`              | Pydantic settings / env                                |
+| `app/llm/text_generation.py`   | Provider routing + OpenAI-compatible & Anthropic loops |
+| `app/llm/gemini_generation.py` | Google Gemini (Google AI Studio)                       |
+| `app/agent/tools_spec.py`      | System prompt + `emit_audio_script` schema             |
+| `app/tts/elevenlabs_tts.py`    | ElevenLabs synthesis + retries                         |
+| `app/agent/service.py`         | Orchestration                                          |
+| `app/api/routes.py`            | Routes                                                 |
+| `app/static/`                  | Web UI (HTML, CSS, JS)                                 |
+| `app/cli.py`                   | CLI entry                                              |
+| `tests/`                       | Pytest                                                 |
+
 
 ## Logging and errors
 
